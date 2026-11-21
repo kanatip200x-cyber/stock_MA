@@ -7,7 +7,6 @@
 .agv-controls select{padding:8px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-card);color:var(--text-primary)}
 .agv-buttons{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
 .agv-buttons button{border:0;border-radius:6px;padding:9px 14px;background:var(--theme-red);color:#fff;font-weight:700;cursor:pointer}
-.agv-buttons button.ghost{background:var(--theme-red-light);color:var(--theme-red);border:1px solid var(--theme-red)}
 .agv-buttons button:disabled{opacity:.45;cursor:not-allowed}
 .agv-clock{display:flex;gap:18px;flex-wrap:wrap;padding:10px 12px;border-radius:8px;background:var(--theme-red-light);color:var(--text-primary);font-size:13px;margin-bottom:12px}
 .agv-clock .st-running{color:#b45309}.agv-clock .st-completed{color:#15803d}.agv-clock .st-error{color:var(--theme-red)}

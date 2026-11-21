@@ -78,7 +78,7 @@ function receiveRandomProduct(manual = false) {
   arrivals.unshift({ ...product, amount, time: formatTime(), action: "รับสินค้าเข้าคลัง" });
   render();
   showToast("รับสินค้าเรียบร้อย", `${product.name} เพิ่มเข้า ${amount} หน่วย`);
-  logStockToSheet({ type: "IN", name: product.name, sku: product.sku, qty: amount, lot: product.lot, pallet: product.pallet, from: "", to: product.location, note: manual ? "กดรับสินค้าเข้า" : "รับเข้าอัตโนมัติ (จำลอง)" });
+  logStockToSheet({ type: "IN", name: product.name, sku: product.sku, qty: amount, lot: product.lot, pallet: product.pallet, from: "", to: product.location, note: manual ? "กดรับสินค้าเข้า" : "รับเข้าอัตโนมัติ" });
   if (!manual) seconds = 60;
 }
 function tick() {
@@ -88,11 +88,6 @@ function tick() {
 }
 document.querySelector("#receiveNow").addEventListener("click", () => receiveRandomProduct(true));
 document.querySelector("#stockSearch").addEventListener("input", event => { searchTerm = event.target.value.toLowerCase().trim(); renderProducts(); });
-document.querySelector("#partitionFilter").addEventListener("change", event => showToast(event.target.checked ? "เปิดตัวกรอง Partition" : "ปิดตัวกรอง Partition", "ข้อมูลจำลองยังคงอยู่ภายในหน้านี้เท่านั้น"));
-document.querySelectorAll(".original-tabs .tab-btn").forEach(tab => tab.addEventListener("click", () => {
-  document.querySelectorAll(".original-tabs .tab-btn").forEach(item => item.classList.toggle("active-tab", item === tab));
-  if (!tab.textContent.includes("รายการสต็อค")) showToast(tab.textContent.trim(), "ส่วนนี้ทำงานในโหมดข้อมูลจำลอง");
-}));
 const detailModal = document.querySelector("#stockDetailModal");
 const detailContent = document.querySelector("#detailContent");
 let detailProduct = null;
@@ -102,9 +97,9 @@ function renderDetailModal() {
   const rows = activeDetailTab === "basic"
     ? [["สินค้า", detailProduct.name], ["รหัสวัสดุ", detailProduct.sku], ["จำนวน", `${detailProduct.qty} หน่วย`], ["สถานะ", detailProduct.qty <= 10 ? "ใกล้หมด" : "พร้อมใช้"]]
     : activeDetailTab === "location"
-      ? [["ล็อต/แบทช์", detailProduct.lot], ["เลขพาเลท", detailProduct.pallet], ["คลัง/พื้นที่", detailProduct.location], ["Partition", "ข้อมูลชุดที่ 1 (จำลอง)"]]
+      ? [["ล็อต/แบทช์", detailProduct.lot], ["เลขพาเลท", detailProduct.pallet], ["คลัง/พื้นที่", detailProduct.location]]
       : null;
-  detailContent.innerHTML = rows ? rows.map(([label, value]) => `<div class="detail-row"><span class="detail-label">${label}</span><span class="detail-value">${value}</span></div>`).join("") : `<pre class="detail-json">${JSON.stringify({ ...detailProduct, source: "mock-original-stock", apiConnected: false }, null, 2)}</pre>`;
+  detailContent.innerHTML = rows ? rows.map(([label, value]) => `<div class="detail-row"><span class="detail-label">${label}</span><span class="detail-value">${value}</span></div>`).join("") : `<pre class="detail-json">${JSON.stringify(detailProduct, null, 2)}</pre>`;
 }
 function openDetail(product) { detailProduct = product; activeDetailTab = "basic"; document.querySelectorAll(".detail-tab").forEach(tab => tab.classList.toggle("active", tab.dataset.detailTab === activeDetailTab)); renderDetailModal(); detailModal.classList.add("active"); detailModal.setAttribute("aria-hidden", "false"); }
 function closeDetail() { detailModal.classList.remove("active"); detailModal.setAttribute("aria-hidden", "true"); }
@@ -122,18 +117,10 @@ document.querySelector("#moveStockButton").addEventListener("click", () => {
   products.splice(productIndex, 1);
   arrivals.unshift({ ...detailProduct, amount: detailProduct.qty, time: formatTime(), action: `ย้ายออกจาก ${source} → ${destination}` });
   render(); renderDetailModal(); closeDetail();
-  showToast("จำลองการขนย้ายสำเร็จ", `${detailProduct.name} จาก ${source} ไป ${destination}`);
+  showToast("ย้ายสินค้าสำเร็จ", `${detailProduct.name} จาก ${source} ไป ${destination}`);
   logStockToSheet({ type: "OUT", name: detailProduct.name, sku: detailProduct.sku, qty: detailProduct.qty, lot: detailProduct.lot, pallet: detailProduct.pallet, from: source, to: destination, note: "ย้ายสินค้าออก" });
 });
 document.addEventListener("keydown", event => { if (event.key === "Escape") closeDetail(); });
-document.querySelectorAll("[data-pagination]").forEach(pagination => {
-  pagination.innerHTML = [1,2,3,4,5,6,7,8,9,"…",18,"›"].map(page => `<button class="page-button ${page === 1 ? "active" : ""}" type="button" data-page="${page}">${page}</button>`).join("");
-  pagination.addEventListener("click", event => {
-    const button = event.target.closest("[data-page]"); if (!button) return;
-    document.querySelectorAll(".page-button").forEach(item => item.classList.toggle("active", item.dataset.page === button.dataset.page));
-    if (button.dataset.page !== "1") showToast("ข้อมูลตัวอย่าง", `กำลังแสดงหน้า ${button.dataset.page} ของข้อมูลต้นฉบับ 180 รายการ`);
-  });
-});
 const sidebar = document.querySelector("#sidebar");
 const overlay = document.querySelector("#overlay");
 const toggleMenu = () => { sidebar.classList.toggle("active"); overlay.classList.toggle("active"); };

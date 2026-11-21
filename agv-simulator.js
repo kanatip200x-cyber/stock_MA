@@ -1,6 +1,6 @@
 /*
  * AGV 3-Step Stock Move Simulator
- * จำลองลำดับงานตาม AGV_3_STEP_LIBRARY.md (ไม่เชื่อมต่อ WMS/Backend จริง)
+ * ลำดับงานตาม AGV_3_STEP_LIBRARY.md (ทำงานภายในหน้าเว็บ ไม่เชื่อมต่อ WMS/Backend จริง)
  * - Worker ตรวจคิวทุก 5 วินาทีต่อรอบ (POLL_MS)
  * - Step 1: Partition 3 → IN   (task type 6, WAIT_FOR_LINKED_STOCK)
  * - Step 2: ต้นทาง → OUT        (task type 1, WAIT_FOR_WMS_MATCH รอ STARTED/3)
@@ -40,15 +40,12 @@
   overlay.setAttribute("aria-hidden", "true");
   overlay.innerHTML = `
   <section class="stock-detail-modal agv-modal" role="dialog" aria-modal="true" aria-labelledby="agvTitle">
-    <div class="detail-header"><h2 id="agvTitle">🤖 จำลอง AGV 3-Step Stock Move</h2><button class="detail-close" id="agvClose" aria-label="ปิด">✕</button></div>
+    <div class="detail-header"><h2 id="agvTitle">🤖 AGV 3-Step Stock Move</h2><button class="detail-close" id="agvClose" aria-label="ปิด">✕</button></div>
     <p class="agv-sub" id="agvItem"></p>
     <div class="agv-controls">
       <label>ปลายทาง<select id="agvDest"></select></label>
-      <label>สถานการณ์<select id="agvScenario">${Object.entries(SCENARIOS).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select></label>
       <div class="agv-buttons">
-        <button type="button" id="agvStart">▶ ส่ง Job (อัตโนมัติ 5 วิ/รอบ)</button>
-        <button type="button" id="agvStep" class="ghost">⏭ ทีละรอบ</button>
-        <button type="button" id="agvReset" class="ghost">↺ เริ่มใหม่</button>
+        <button type="button" id="agvStart">▶ ส่งงาน AGV</button>
       </div>
     </div>
     <div class="agv-clock"><span>Job: <b id="agvJob">—</b></span><span>สถานะ: <b id="agvJobStatus">ยังไม่ส่ง</b></span><span>รอบที่ <b id="agvRound">0</b> · T+<b id="agvT">0</b>s</span><span>รอบถัดไปใน <b id="agvCountdown">—</b></span></div>
@@ -62,7 +59,7 @@
 
   const openBtn = document.createElement("button");
   openBtn.type = "button"; openBtn.id = "agvOpenButton"; openBtn.className = "agv-open";
-  openBtn.textContent = "🤖 จำลอง AGV 3 Steps";
+  openBtn.textContent = "🤖 ส่งงาน AGV 3 Steps";
   document.querySelector(".move-action")?.appendChild(openBtn);
 
   /* ---------- State ---------- */
@@ -261,7 +258,7 @@
       p.location = to;
       arrivals.unshift({ ...p, amount: p.qty, time: formatTime(), action: `AGV 3-Step ${from} → ${to}` });
       render();
-      showToast("AGV ขนย้ายสำเร็จ (จำลอง)", `${p.name} จาก ${from} ไป ${to}`);
+      showToast("AGV ขนย้ายสำเร็จ", `${p.name} จาก ${from} ไป ${to}`);
     }
   }
 
@@ -284,9 +281,8 @@
     $("#agvPayload").textContent = JSON.stringify(sim.job, null, 2);
     const running = sim.status === "running";
     $("#agvStart").disabled = sim.status !== "idle" && !running;
-    $("#agvStart").textContent = running ? (timer ? "⏸ หยุดชั่วคราว" : "▶ ทำต่ออัตโนมัติ") : "▶ ส่ง Job (อัตโนมัติ 5 วิ/รอบ)";
-    $("#agvStep").disabled = !(sim.status === "idle" || running);
-    $("#agvDest").disabled = $("#agvScenario").disabled = sim.status !== "idle";
+    $("#agvStart").textContent = running ? (timer ? "⏸ หยุดชั่วคราว" : "▶ ทำงานต่อ") : sim.status === "idle" ? "▶ ส่งงาน AGV" : "✓ จบงานแล้ว";
+    $("#agvDest").disabled = sim.status !== "idle";
   }
 
   /* ---------- Timer ---------- */
@@ -304,21 +300,13 @@
   function updateCountdown() { $("#agvCountdown").textContent = timer ? `${Math.max(0, Math.ceil((nextAt - Date.now()) / 1000))} วิ` : "—"; }
 
   /* ---------- Events ---------- */
-  function resetSim() {
-    stopAuto();
-    if (sim?.status === "running") activeQueue.delete(sim.job.jobName);
-    const product = sim?.product || (typeof detailProduct !== "undefined" ? detailProduct : null);
-    if (!product) return;
-    sim = newSim(product, $("#agvDest").value, $("#agvScenario").value);
-    paint();
-  }
   function openSim() {
     const product = typeof detailProduct !== "undefined" ? detailProduct : null;
     if (!product) return;
     const srcSelect = document.querySelector("#moveDestination");
     $("#agvDest").innerHTML = [...srcSelect.options].map(o => `<option value="${o.value}">${o.textContent}</option>`).join("") + '<option value="Manual">Manual (ไม่มี Step 3)</option>';
     $("#agvDest").value = srcSelect.value !== product.location ? srcSelect.value : ([...srcSelect.options].find(o => o.value !== product.location)?.value || "Manual");
-    if (sim?.product !== product || sim.status !== "running") { sim = newSim(product, $("#agvDest").value, $("#agvScenario").value); }
+    if (sim?.product !== product || sim.status !== "running") { sim = newSim(product, $("#agvDest").value, "normal"); }
     paint();
     document.querySelector("#stockDetailModal").classList.remove("active");
     overlay.classList.add("active"); overlay.setAttribute("aria-hidden", "false");
@@ -328,9 +316,7 @@
   openBtn.addEventListener("click", openSim);
   $("#agvClose").addEventListener("click", closeSim);
   overlay.addEventListener("click", e => { if (e.target === overlay) closeSim(); });
-  $("#agvDest").addEventListener("change", () => { if (sim?.status === "idle") { sim = newSim(sim.product, $("#agvDest").value, $("#agvScenario").value); paint(); } });
-  $("#agvScenario").addEventListener("change", () => { if (sim?.status === "idle") { sim = newSim(sim.product, $("#agvDest").value, $("#agvScenario").value); paint(); } });
-  $("#agvReset").addEventListener("click", resetSim);
+  $("#agvDest").addEventListener("change", () => { if (sim?.status === "idle") { sim = newSim(sim.product, $("#agvDest").value, "normal"); paint(); } });
   $("#agvStart").addEventListener("click", () => {
     if (!sim) return;
     if (sim.status === "idle") {
@@ -339,14 +325,6 @@
       paint(); return;
     }
     if (sim.status === "running") { timer ? stopAuto() : startAuto(); paint(); }
-  });
-  $("#agvStep").addEventListener("click", () => {
-    if (!sim) return;
-    if (sim.status === "idle") {
-      if (sim.product.location === sim.destination) { showToast("เลือกตำแหน่งเดิม", "กรุณาเลือกปลายทางอื่น"); return; }
-      submit(); paint(); return;
-    }
-    stopAuto(); pollOnce();
   });
   document.addEventListener("keydown", e => { if (e.key === "Escape") closeSim(); });
 
