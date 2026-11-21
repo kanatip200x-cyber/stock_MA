@@ -9,6 +9,9 @@ window.SUPABASE_CONFIG = {
   supabaseAnonKey: "sb_publishable_BH1xUr9B4fvEzkTxx28nAg_NUoFeqog",
   // (ไม่บังคับ) จำกัดให้ล็อกอินได้เฉพาะอีเมลโดเมนนี้ เช่น "latto.co.th" เว้นว่าง = Gmail ใดก็ได้
   allowedEmailDomain: "",
+  // โหมดผู้เยี่ยมชม: เข้าด้วย PIN ได้โดยไม่ต้องล็อกอิน Google จะเห็นข้อมูลตัวอย่างในเบราว์เซอร์ (ไม่แตะฐานข้อมูลจริง)
+  // เก็บเป็นค่า hash ของ PIN (SHA-256 ของ "inventory-demo:" + PIN) เปลี่ยน PIN ได้ด้วยคำสั่งใน README
+  guestPinHash: "9937ca04f237ab7ccf8e9c9d0f790864a541172b5e4828681a52360114e2df19",
 };
 
 // ===== ตั้งค่าการเชื่อมต่อ Google Sheet =====

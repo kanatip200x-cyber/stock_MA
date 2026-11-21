@@ -21,7 +21,9 @@ const defaultProducts = [
   { name: 'ผักเปรี้ยวไม่ใส่ VCP "Wei Chuan" 300g.*36ถุง-กล่อง', sku: "07012541", qty: 64, lot: "—", pallet: "—", location: "6-1-8" }
 ];
 
-const sb = window.Auth && window.Auth.enabled ? window.Auth.client : null;
+// ผู้เยี่ยมชม (เข้าด้วย PIN) ใช้ข้อมูลตัวอย่างในเบราว์เซอร์ ไม่แตะฐานข้อมูลจริง
+const GUEST = !!(window.Auth && window.Auth.isGuest());
+const sb = window.Auth && window.Auth.enabled && !GUEST ? window.Auth.client : null;
 const ONLINE = !!sb;
 const savedState = ONLINE ? null : (() => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); } catch { return null; } })();
 // products / arrivals ถูกใช้ร่วมกับ agv-simulator.js (แก้ค่าในอาเรย์เดิม ไม่สร้างอาเรย์ใหม่)
@@ -33,7 +35,7 @@ let searchTerm = "";
 let toastTimeout;
 let currentUser = null;
 let currentProfile = null;
-let connectionState = ONLINE ? "กำลังเชื่อมต่อ..." : "โหมดออฟไลน์ (ข้อมูลในเบราว์เซอร์นี้)";
+let connectionState = ONLINE ? "กำลังเชื่อมต่อ..." : GUEST ? "โหมดผู้เยี่ยมชม (ข้อมูลตัวอย่าง)" : "โหมดออฟไลน์ (ข้อมูลในเบราว์เซอร์นี้)";
 
 // ป้องกันข้อความแปลก ๆ จากฐานข้อมูลกลายเป็นโค้ด HTML
 const esc = value => String(value ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
@@ -232,6 +234,12 @@ function renderUser() {
   const roleEl = document.querySelector("#userRole");
   const avatarEl = document.querySelector("#userAvatar");
   const logoutBtn = document.querySelector("#logoutButton");
+  if (GUEST) {
+    nameEl.textContent = "ผู้เยี่ยมชม"; roleEl.textContent = "GUEST"; roleEl.className = "role-badge badge-guest";
+    logoutBtn.textContent = "ออก"; logoutBtn.hidden = false;
+    logoutBtn.addEventListener("click", () => Auth.signOut());
+    return;
+  }
   if (!ONLINE) { nameEl.textContent = "Demo User"; roleEl.textContent = "OFFLINE"; logoutBtn.hidden = true; return; }
   const name = currentProfile?.full_name || currentUser.user_metadata?.full_name || currentUser.email;
   const role = (currentProfile?.role || "staff").toUpperCase();
