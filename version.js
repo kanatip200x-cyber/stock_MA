@@ -4,8 +4,8 @@
 // changes: สรุปสิ่งที่เปลี่ยนในเวอร์ชันนี้ (แสดงเมื่อกดที่ป้ายเวอร์ชัน)
 window.APP_VERSION = {
   version: "1.3",
-  build: 12,
-  date: "2026-11-21 15:29",
+  build: 13,
+  date: "2026-11-21 15:35",
   repo: "https://github.com/kanatip200x-cyber/stock_MA",
   changes: [
     "ข้อมูลสินค้าย้ายไปเก็บใน Google Sheet \"สินค้า\" (รับเข้า/ขนย้ายแล้วชีตอัปเดตทันที)",
