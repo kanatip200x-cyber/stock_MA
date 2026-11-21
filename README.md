@@ -13,6 +13,7 @@
 | `sheet-logger.js` | ส่งรายการเข้า/ออกไปที่ Google Sheet (มีคิวเก็บไว้ส่งใหม่ถ้าเน็ตหลุด) |
 | `config.js` | ใส่ URL ของ Google Apps Script และ token |
 | `google-apps-script/Code.gs` | โค้ดฝั่ง Google Sheet ที่รับข้อมูลแล้วเขียนลงชีต |
+| `tools/start-auto-push.bat`, `tools/push-now.bat`, `tools/auto-push.ps1` | อัปโหลดขึ้น GitHub อัตโนมัติ / ครั้งเดียว |
 
 ## รายการที่ถูกบันทึกลง Google Sheet
 
@@ -57,7 +58,18 @@
 - เปิดไฟล์ `index.html` ด้วยเบราว์เซอร์ได้โดยตรง หรือ
 - ขึ้น **GitHub Pages**: push ไฟล์ทั้งหมดขึ้น GitHub แล้วไปที่ **Settings > Pages > Source: Deploy from a branch > `main` / root**
 
-## นำขึ้น GitHub
+## อัปขึ้น GitHub อัตโนมัติ (Windows)
+
+มีสคริปต์ในโฟลเดอร์ `tools/` ให้ใช้ (ต้องติดตั้ง [Git for Windows](https://git-scm.com/download/win) ก่อน)
+
+1. สร้าง repo เปล่าบน GitHub (แนะนำให้ตั้งเป็น **Private** เพราะ `config.js` มี URL ของ Google Sheet) โดยไม่ต้องติ๊กสร้าง README
+2. ดับเบิลคลิก `tools/start-auto-push.bat`
+3. ครั้งแรกจะถาม URL ของ repo ให้วาง เช่น `https://github.com/<ชื่อผู้ใช้>/<ชื่อ-repo>.git` และจะมีหน้าต่างให้ล็อกอิน GitHub
+4. ปล่อยหน้าต่างนี้เปิดไว้ ทุกครั้งที่แก้ไฟล์แล้วบันทึก ระบบจะรอ 15 วินาทีแล้ว commit + push ขึ้น GitHub ให้เอง ปิดหน้าต่างเพื่อหยุด
+
+ถ้าอยากอัปเฉพาะตอนที่ต้องการ ให้ดับเบิลคลิก `tools/push-now.bat` แทน (อัปครั้งเดียวแล้วจบ)
+
+## นำขึ้น GitHub (แบบพิมพ์คำสั่งเอง)
 
 ```bash
 git init
