@@ -57,12 +57,31 @@ if ($LASTEXITCODE -ne 0) {
 if (-not (& git.exe config user.name)) { Invoke-Git config user.name "kanatip200x-cyber" }
 if (-not (& git.exe config user.email)) { Invoke-Git config user.email "235220843+kanatip200x-cyber@users.noreply.github.com" }
 
+# เพิ่มเลข build ใน version.js ทุกครั้งที่อัป (เลข build = จำนวน commit ทั้งหมด)
+function Update-Version {
+  $file = Join-Path $ProjectDir "version.js"
+  if (-not (Test-Path $file)) { return "" }
+  & git.exe rev-parse --verify HEAD *> $null
+  $build = 1
+  if ($LASTEXITCODE -eq 0) { $build = [int](& git.exe rev-list --count HEAD) + 1 }
+  $date = Get-Date -Format "yyyy-MM-dd HH:mm"
+  $utf8 = New-Object System.Text.UTF8Encoding($false)
+  $text = [System.IO.File]::ReadAllText($file, $utf8)
+  $text = [regex]::Replace($text, 'build:\s*\d+', "build: $build")
+  $text = [regex]::Replace($text, 'date:\s*"[^"]*"', "date: ""$date""")
+  [System.IO.File]::WriteAllText($file, $text, $utf8)
+  Invoke-Git add version.js
+  $m = [regex]::Match($text, 'version:\s*"([^"]+)"')
+  return "v$($m.Groups[1].Value).$build"
+}
+
 function Sync-Now {
   Invoke-Git add -A
   & git.exe diff --cached --quiet
   if ($LASTEXITCODE -eq 0) { Log "ไม่มีไฟล์เปลี่ยน"; return }
   $stamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-  Invoke-Git commit -m "Auto update $stamp"
+  $label = Update-Version
+  Invoke-Git commit -m "Auto update $label ($stamp)"
   # ดึงของใหม่จาก GitHub ก่อน (ถ้ามี) เพื่อไม่ให้ push ชน
   & git.exe ls-remote --exit-code --heads origin main *> $null
   if ($LASTEXITCODE -eq 0) { Invoke-Git pull --rebase origin main }
