@@ -16,3 +16,14 @@ body{overflow:auto}.original-summary{margin-top:9px!important;font-size:12px!imp
 .activity{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-color)}.activity:last-child{border-bottom:0}.activity-icon{flex:0 0 32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--theme-red-light);color:var(--theme-red);font-weight:700}.activity div{flex:1;min-width:0}.activity strong{color:var(--text-primary);font-size:13px}.activity p{margin:2px 0 0;color:var(--text-secondary);font-size:12px}.activity time{color:var(--text-secondary);font-size:12px;white-space:nowrap}p.empty{color:var(--text-secondary);text-align:center}
 .toast{position:fixed;right:20px;bottom:20px;z-index:4000;display:flex;align-items:flex-start;gap:10px;max-width:340px;padding:14px 16px;background:#fff;border-left:5px solid var(--theme-red);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.18);opacity:0;transform:translateY(20px);pointer-events:none;transition:opacity .25s,transform .25s}.toast.show{opacity:1;transform:none;pointer-events:auto}.toast>span{flex:0 0 26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--theme-red);color:#fff;font-weight:700}.toast strong{color:var(--text-primary)}.toast p{margin:3px 0 0;color:var(--text-secondary);font-size:13px}
 @media(max-width:900px){.bottom-grid{grid-template-columns:1fr}}@media(max-width:640px){.summary-grid{grid-template-columns:1fr}.demo-header h1{font-size:22px}}
+
+/* ===== popup รายละเอียดสินค้า: กระชับขึ้นและไม่มีแถบเลื่อน ===== */
+.stock-detail-modal{width:min(620px,94vw);max-height:94vh;padding:18px 20px;scrollbar-width:none;-ms-overflow-style:none}
+.stock-detail-modal::-webkit-scrollbar{display:none}
+.stock-detail-modal .detail-tabs{margin:12px 0;padding-bottom:10px}
+.stock-detail-modal .detail-row{padding:6px 0}
+.stock-detail-modal .move-action{margin-top:12px;padding-top:12px}
+.stock-detail-modal .move-steps{margin-top:10px;padding:10px 12px}
+.stock-detail-modal .move-steps ol{gap:6px}
+.stock-detail-modal .move-steps p{margin:1px 0 4px}
+.stock-detail-modal .ms-num{flex-basis:24px;height:24px;font-size:12px}

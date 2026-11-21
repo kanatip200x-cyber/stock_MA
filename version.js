@@ -4,8 +4,8 @@
 // changes: สรุปสิ่งที่เปลี่ยนในเวอร์ชันนี้ (แสดงเมื่อกดที่ป้ายเวอร์ชัน)
 window.APP_VERSION = {
   version: "1.1",
-  build: 8,
-  date: "2026-11-21 15:09",
+  build: 9,
+  date: "2026-11-21 15:13",
   repo: "https://github.com/kanatip200x-cyber/stock_MA",
   changes: [
     "ล็อกอินด้วย Google ผ่าน Supabase",
