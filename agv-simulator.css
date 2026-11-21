@@ -1,32 +1,18 @@
-/* AGV 3-Step simulator (ธีมแดง-ขาว ใช้ตัวแปรจาก common-style.css) */
-.move-action .agv-open{grid-column:1/-1;background:var(--theme-red-dark)}
-.agv-modal{width:min(900px,95vw);max-height:90vh}
-.agv-sub{margin:6px 0 12px;color:var(--text-secondary);font-size:13px}
-.agv-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-.agv-controls label{display:flex;flex-direction:column;gap:4px;color:var(--text-primary);font-size:13px;font-weight:700}
-.agv-controls select{padding:8px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-card);color:var(--text-primary)}
-.agv-buttons{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
-.agv-buttons button{border:0;border-radius:6px;padding:9px 14px;background:var(--theme-red);color:#fff;font-weight:700;cursor:pointer}
-.agv-buttons button:disabled{opacity:.45;cursor:not-allowed}
-.agv-clock{display:flex;gap:18px;flex-wrap:wrap;padding:10px 12px;border-radius:8px;background:var(--theme-red-light);color:var(--text-primary);font-size:13px;margin-bottom:12px}
-.agv-clock .st-running{color:#b45309}.agv-clock .st-completed{color:#15803d}.agv-clock .st-error{color:var(--theme-red)}
-.agv-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.agv-step{padding:12px;border:1px solid var(--border-color);border-left:5px solid #9ca3af;border-radius:8px;background:var(--bg-card)}
-.agv-step.current{box-shadow:0 0 0 2px var(--theme-red)}
-.agv-step-top{display:flex;justify-content:space-between;gap:6px;align-items:flex-start;color:var(--text-primary);font-size:13px}
-.agv-step small{color:var(--text-secondary);font-family:Consolas,monospace;font-size:11px}
-.agv-step p{margin:6px 0 0;color:var(--text-primary);font-size:12px}
-.agv-step .badge{flex:none;padding:2px 8px;border-radius:999px;background:#e5e7eb;color:#374151;font-size:11px;font-weight:700}
-.agv-step.st-waiting{border-left-color:#f59e0b}.agv-step.st-waiting .badge{background:#fef3c7;color:#92400e}
-.agv-step.st-created{border-left-color:#2563eb}.agv-step.st-created .badge{background:#dbeafe;color:#1e40af}
-.agv-step.st-done{border-left-color:#16a34a}.agv-step.st-done .badge{background:#dcfce7;color:#166534}
-.agv-step.st-skipped{border-left-color:#9ca3af;opacity:.75}
-.agv-step.st-error{border-left-color:var(--theme-red)}.agv-step.st-error .badge{background:var(--theme-red);color:#fff}
-.agv-h{margin:16px 0 6px;color:var(--text-primary);font-size:15px}
-.agv-log{max-height:240px;overflow:auto;margin:0;padding:8px 10px 8px 14px;list-style:none;border:1px solid var(--border-color);border-radius:8px;font-size:12px;color:var(--text-primary)}
-.agv-log li{padding:3px 0;border-bottom:1px dashed var(--border-color)}
-.agv-log time{display:inline-block;min-width:52px;color:var(--text-secondary);font-family:Consolas,monospace}
-.agv-log .lg-ok{color:#15803d}.agv-log .lg-warn{color:#b45309}.agv-log .lg-err{color:var(--theme-red);font-weight:700}.agv-log .lg-round{color:var(--theme-red);font-weight:700}
-.agv-json{margin-top:12px}.agv-json summary{cursor:pointer;color:var(--theme-red);font-weight:700;font-size:13px}
-.agv-json pre{max-height:260px;overflow:auto;padding:12px;border-radius:8px;background:#0f172a;color:#e2e8f0;font:11px Consolas,monospace}
-@media(max-width:700px){.agv-steps,.agv-controls{grid-template-columns:1fr}}
+/* ขนย้ายสินค้า 3 ขั้นตอนใน popup (ธีมแดง-ขาว ใช้ตัวแปรจาก common-style.css) */
+.move-action button:disabled,.move-action select:disabled{opacity:.55;cursor:not-allowed}
+.move-steps{margin-top:14px;padding:14px;border:1px solid var(--border-color);border-radius:10px;background:var(--theme-red-light)}
+.move-steps[hidden]{display:none}
+.move-steps-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px;color:var(--text-primary);font-size:14px}
+.move-steps-head span{color:var(--theme-red);font-weight:700}
+.move-steps ol{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+.move-steps li{display:flex;gap:10px;align-items:flex-start}
+.move-steps li>div{flex:1;min-width:0}
+.ms-num{flex:0 0 28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:2px solid var(--border-color);background:var(--bg-card);color:var(--text-secondary);font-weight:700;font-size:13px}
+.move-steps strong{color:var(--text-primary);font-size:13px}
+.move-steps p{margin:2px 0 6px;color:var(--text-secondary);font-size:12px}
+.ms-bar{height:6px;border-radius:999px;background:var(--bg-card);overflow:hidden;border:1px solid var(--border-color)}
+.ms-bar i{display:block;height:100%;background:var(--theme-red);transition:width .2s linear}
+.ms-active .ms-num{border-color:var(--theme-red);background:var(--theme-red);color:#fff}
+.ms-done .ms-num{border-color:#16a34a;background:#16a34a;color:#fff}
+.ms-done .ms-bar i{background:#16a34a}
+.ms-pending{opacity:.6}

@@ -107,19 +107,6 @@ document.querySelector("#productTable").addEventListener("click", event => { con
 document.querySelector("#detailClose").addEventListener("click", closeDetail);
 detailModal.addEventListener("click", event => { if (event.target === detailModal) closeDetail(); });
 document.querySelectorAll(".detail-tab").forEach(tab => tab.addEventListener("click", () => { activeDetailTab = tab.dataset.detailTab; document.querySelectorAll(".detail-tab").forEach(item => item.classList.toggle("active", item === tab)); renderDetailModal(); }));
-document.querySelector("#moveStockButton").addEventListener("click", () => {
-  if (!detailProduct) return;
-  const destination = document.querySelector("#moveDestination").value;
-  const source = detailProduct.location;
-  if (source === destination) { showToast("เลือกตำแหน่งเดิม", "กรุณาเลือกปลายทางอื่นสำหรับการขนย้าย"); return; }
-  const productIndex = products.indexOf(detailProduct);
-  if (productIndex < 0) { showToast("ไม่พบสินค้า", "รายการนี้ถูกย้ายออกจากคลังแล้ว"); closeDetail(); return; }
-  products.splice(productIndex, 1);
-  arrivals.unshift({ ...detailProduct, amount: detailProduct.qty, time: formatTime(), action: `ย้ายออกจาก ${source} → ${destination}` });
-  render(); renderDetailModal(); closeDetail();
-  showToast("ย้ายสินค้าสำเร็จ", `${detailProduct.name} จาก ${source} ไป ${destination}`);
-  logStockToSheet({ type: "OUT", name: detailProduct.name, sku: detailProduct.sku, qty: detailProduct.qty, lot: detailProduct.lot, pallet: detailProduct.pallet, from: source, to: destination, note: "ย้ายสินค้าออก" });
-});
 document.addEventListener("keydown", event => { if (event.key === "Escape") closeDetail(); });
 const sidebar = document.querySelector("#sidebar");
 const overlay = document.querySelector("#overlay");
