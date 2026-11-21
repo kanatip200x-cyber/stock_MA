@@ -11,6 +11,9 @@ window.SUPABASE_CONFIG = {
   allowedEmailDomain: "",
   // โหมดผู้เยี่ยมชม: เข้าด้วย PIN ได้โดยไม่ต้องล็อกอิน Google จะเห็นข้อมูลตัวอย่างในเบราว์เซอร์ (ไม่แตะฐานข้อมูลจริง)
   // เก็บเป็นค่า hash ของ PIN (SHA-256 ของ "inventory-demo:" + PIN) เปลี่ยน PIN ได้ด้วยคำสั่งใน README
+  // ข้อมูลสินค้าเก็บใน Google Sheet "สินค้า": ใส่ URL ของ Apps Script Web app (ลงท้ายด้วย /exec)
+  // เว้นว่าง = ใช้ตารางสินค้าใน Supabase แทน
+  productsApiUrl: "",
   guestPinHash: "9937ca04f237ab7ccf8e9c9d0f790864a541172b5e4828681a52360114e2df19",
 };
 

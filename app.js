@@ -24,6 +24,9 @@ const defaultProducts = [
 const GUEST = !!(window.Auth && window.Auth.isGuest());
 const sb = window.Auth && window.Auth.enabled && !GUEST ? window.Auth.client : null;
 const ONLINE = !!sb;
+// โหมด Google Sheet: สินค้าอยู่ในชีต "สินค้า" (ผ่าน Apps Script) ส่วนผู้ใช้/ประวัติยังอยู่ใน Supabase
+const PRODUCTS_API = ONLINE ? ((window.SUPABASE_CONFIG || {}).productsApiUrl || "") : "";
+const SHEET_MODE = !!PRODUCTS_API;
 const savedState = ONLINE ? null : (() => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); } catch { return null; } })();
 // products / arrivals ถูกใช้ร่วมกับ agv-simulator.js (แก้ค่าในอาเรย์เดิม ไม่สร้างอาเรย์ใหม่)
 const products = ONLINE ? [] : (Array.isArray(savedState?.products) && savedState.products.length ? savedState.products : defaultProducts.map(p => ({ ...p })));
@@ -102,10 +105,28 @@ function upsertProduct(row) {
   if (existing) Object.assign(existing, row); // คงอ็อบเจกต์เดิมไว้ ให้ popup/AGV ยังอ้างอิงได้
   else products.unshift(row);
 }
+// เรียก Apps Script ของชีต "สินค้า" พร้อมแนบ token ของผู้ที่ล็อกอิน (ใช้ POST เพื่อไม่ให้ token ไปอยู่ใน URL)
+async function sheetCall(action, payload = {}) {
+  const { data } = await sb.auth.getSession();
+  const res = await fetch(PRODUCTS_API, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ ...payload, action, access_token: data.session?.access_token || "" }),
+  });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || "Google Sheet ตอบกลับผิดพลาด");
+  return json;
+}
+async function recordMovement(row) {
+  const { error } = await sb.from("stock_movements").insert({ ...row, user_name: currentProfile?.full_name || currentUser?.email });
+  if (error) console.warn("[Supabase] บันทึกประวัติไม่สำเร็จ", error);
+}
 async function loadFromDatabase() {
   const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
   const [prod, moves, today, locs] = await Promise.all([
-    sb.from("products").select("*").order("created_at", { ascending: false }).order("id", { ascending: false }),
+    SHEET_MODE
+      ? sheetCall("list").then(r => ({ data: r.products, error: null }), error => ({ data: null, error }))
+      : sb.from("products").select("*").order("created_at", { ascending: false }).order("id", { ascending: false }),
     sb.from("stock_movements").select("*").order("created_at", { ascending: false }).limit(20),
     sb.from("stock_movements").select("qty").eq("type", "IN").gte("created_at", startOfDay.toISOString()),
     sb.from("locations").select("*").eq("is_destination", true).order("sort_order"),
@@ -115,7 +136,8 @@ async function loadFromDatabase() {
   const ids = new Set(prod.data.map(p => p.id));
   for (let i = products.length - 1; i >= 0; i--) if (!ids.has(products[i].id)) products.splice(i, 1);
   prod.data.slice().reverse().forEach(upsertProduct);
-  products.sort((a, b) => new Date(b.created_at) - new Date(a.created_at) || b.id - a.id);
+  if (!SHEET_MODE) products.sort((a, b) => new Date(b.created_at) - new Date(a.created_at) || b.id - a.id);
+  else products.sort((a, b) => b.id - a.id);
   arrivals = moves.data.map(movementToArrival);
   todayIn = today.data.reduce((s, r) => s + r.qty, 0);
   if (!locs.error && locs.data.length) fillDestinations(locs.data);
@@ -141,10 +163,21 @@ function subscribeRealtime() {
     .on("postgres_changes", { event: "*", schema: "public", table: "products" }, scheduleReload)
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "stock_movements" }, scheduleReload)
     .subscribe(status => { if (status === "SUBSCRIBED") document.querySelector(".live-label")?.classList.add("is-live"); });
+  // ชีตไม่มี realtime: ดึงข้อมูลใหม่ทุก 20 วินาที (เฉพาะตอนเปิดแท็บดูอยู่)
+  if (SHEET_MODE) setInterval(() => { if (!document.hidden) scheduleReload(); }, 20000);
 }
 // เรียกจาก agv-simulator.js เมื่อขนย้ายครบ 3 ขั้นตอน
 window.persistMove = async function (product, from, to) {
   if (!ONLINE) return true;
+  if (SHEET_MODE) {
+    try {
+      const { product: row } = await sheetCall("move", { id: product.id, to, note: "ขนย้าย 3 ขั้นตอน (AGV)" });
+      Object.assign(product, row);
+      await recordMovement({ type: "MOVE", name: row.name, sku: row.sku, qty: row.qty, lot: row.lot, pallet: row.pallet, from_location: from, to_location: to, note: "ขนย้าย 3 ขั้นตอน (AGV)" });
+      scheduleReload();
+      return true;
+    } catch (e) { product.location = from; handleDbError(e); return false; }
+  }
   const { data, error } = await sb.rpc("move_product", { p_product_id: product.id, p_to: to, p_note: "ขนย้าย 3 ขั้นตอน (AGV)" });
   if (error) { product.location = from; handleDbError(error); return false; }
   Object.assign(product, data);
@@ -170,7 +203,15 @@ async function receiveRandomProduct(manual = false) {
     if (receiving) return;
     receiving = true;
     try {
-      const { data, error } = await sb.rpc("receive_product", { p_name: draft.name, p_sku: draft.sku, p_qty: amount, p_lot: draft.lot, p_pallet: draft.pallet, p_location: draft.location, p_note: note });
+      let data, error;
+      if (SHEET_MODE) {
+        try {
+          data = (await sheetCall("receive", { ...draft, qty: amount, note })).product;
+          await recordMovement({ type: "IN", name: data.name, sku: data.sku, qty: amount, lot: data.lot, pallet: data.pallet, from_location: null, to_location: data.location, note });
+        } catch (e) { error = e; }
+      } else {
+        ({ data, error } = await sb.rpc("receive_product", { p_name: draft.name, p_sku: draft.sku, p_qty: amount, p_lot: draft.lot, p_pallet: draft.pallet, p_location: draft.location, p_note: note }));
+      }
       if (error) return handleDbError(error);
       upsertProduct(data); todayIn += amount;
       arrivals.unshift({ ...data, type: "IN", amount, time: formatTime(), action: "รับสินค้าเข้าคลัง", user_name: currentProfile?.full_name || currentUser?.email });
