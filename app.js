@@ -4,21 +4,20 @@
 //  2) ออฟไลน์: ถ้ายังไม่ได้ตั้งค่า config.js ข้อมูลเก็บใน localStorage ของเบราว์เซอร์ (แบบเดิม)
 const MAX_STORAGE = 4000;
 const SOFT_LIMIT = MAX_STORAGE / 2;
-const STORAGE_KEY = "factoryInventoryOriginalStateV2";
+const STORAGE_KEY = "factoryInventoryDemoStateV3"; // เปลี่ยนชื่อเพื่อล้างข้อมูลเก่าที่เคยเก็บในเบราว์เซอร์
 const BASE_STOCK = 1355;
 const BASE_RECORD_COUNT = 170;
 const BASE_LOW_STOCK_COUNT = 147;
+// ข้อมูลตัวอย่าง (สมมติ) สำหรับ demo: สินค้าดอง 4 ชนิด ชนิดละ 2 พาเลท พาเลทละ 60 ชิ้น
 const defaultProducts = [
-  { name: 'ผักเปรี้ยวไม่ใส่ VCP "Wei Chuan" 300g.*36ถุง-กล่อง', sku: "07012541", qty: 64, lot: "—", pallet: "—", location: "6-2-11" },
-  { name: 'ผักเปรี้ยวไม่ใส่ VCP "Wei Chuan" 300g.*36ถุง-กล่อง', sku: "07012541", qty: 64, lot: "—", pallet: "—", location: "6-1-2" },
-  { name: "วัสดุพื้นฐาน", sku: "1001", qty: 1, lot: "—", pallet: "—", location: "2-2-7" },
-  { name: "วัสดุพื้นฐาน", sku: "1001", qty: 1, lot: "—", pallet: "—", location: "2-2-6" },
-  { name: 'ผักเปรี้ยวไม่ใส่ VCP "Wei Chuan" 300g.*36ถุง-กล่อง', sku: "07012541", qty: 64, lot: "2610/0544", pallet: "10", location: "6-2-9" },
-  { name: 'ผักเปรี้ยวไม่ใส่ VCP "Wei Chuan" 300g.*36ถุง-กล่อง', sku: "07012541", qty: 64, lot: "2610/0544", pallet: "09", location: "6-1-13" },
-  { name: 'ผักเปรี้ยวไม่ใส่ VCP "Wei Chuan" 300g.*36ถุง-กล่อง', sku: "07012541", qty: 64, lot: "—", pallet: "—", location: "6-1-12" },
-  { name: 'ผักเปรี้ยวไม่ใส่ VCP "Wei Chuan" 300g.*36ถุง-กล่อง', sku: "07012541", qty: 1, lot: "2610/0544", pallet: "07", location: "6-1-11" },
-  { name: "วัสดุพื้นฐาน", sku: "1001", qty: 1, lot: "—", pallet: "—", location: "2-1-8" },
-  { name: 'ผักเปรี้ยวไม่ใส่ VCP "Wei Chuan" 300g.*36ถุง-กล่อง', sku: "07012541", qty: 64, lot: "—", pallet: "—", location: "6-1-8" }
+  { name: "ผักกาดดอง", sku: "DEMO-1001", qty: 60, lot: "LOT-2611-01", pallet: "P01", location: "6-2-11" },
+  { name: "ผักกาดดอง", sku: "DEMO-1001", qty: 60, lot: "LOT-2611-02", pallet: "P02", location: "6-1-2" },
+  { name: "ขิงดอง", sku: "DEMO-1002", qty: 60, lot: "LOT-2611-03", pallet: "P03", location: "2-2-7" },
+  { name: "ขิงดอง", sku: "DEMO-1002", qty: 60, lot: "LOT-2611-04", pallet: "P04", location: "2-2-6" },
+  { name: "มะนาวดอง", sku: "DEMO-1003", qty: 60, lot: "LOT-2611-05", pallet: "P05", location: "6-2-9" },
+  { name: "มะนาวดอง", sku: "DEMO-1003", qty: 60, lot: "LOT-2611-06", pallet: "P06", location: "6-1-13" },
+  { name: "กระเทียมดอง", sku: "DEMO-1004", qty: 60, lot: "LOT-2611-07", pallet: "P07", location: "6-1-12" },
+  { name: "กระเทียมดอง", sku: "DEMO-1004", qty: 60, lot: "LOT-2611-08", pallet: "P08", location: "2-1-8" }
 ];
 
 // ผู้เยี่ยมชม (เข้าด้วย PIN) ใช้ข้อมูลตัวอย่างในเบราว์เซอร์ ไม่แตะฐานข้อมูลจริง
