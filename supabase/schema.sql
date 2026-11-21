@@ -122,6 +122,12 @@ revoke execute on function public.receive_product(text,text,int,text,text,text,t
 revoke execute on function public.move_product(bigint,text,text) from anon, public;
 grant execute on function public.receive_product(text,text,int,text,text,text,text) to authenticated;
 grant execute on function public.move_product(bigint,text,text) to authenticated;
+-- ฟังก์ชันภายใน: ไม่ให้คนที่ยังไม่ล็อกอินเรียกใช้
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+revoke execute on function public.is_admin() from public, anon;
+revoke execute on function public.current_user_name() from public, anon;
+grant execute on function public.is_admin() to authenticated;
+grant execute on function public.current_user_name() to authenticated;
 
 -- ---------- Row Level Security ----------
 alter table public.profiles enable row level security;

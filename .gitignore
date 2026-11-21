@@ -1,0 +1,13 @@
+# ระบบปฏิบัติการ / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+
+.env
+
+# clasp (ถ้าใช้ deploy Apps Script ผ่าน command line)
+.clasprc.json
+node_modules/

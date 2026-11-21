@@ -5,8 +5,8 @@
 // ห้ามใส่ service_role key หรือ secret key ในไฟล์นี้เด็ดขาด
 // ถ้าเว้นว่างไว้ เว็บจะทำงานแบบออฟไลน์ (เก็บข้อมูลในเบราว์เซอร์) และไม่ต้องล็อกอิน
 window.SUPABASE_CONFIG = {
-  supabaseUrl: "",
-  supabaseAnonKey: "",
+  supabaseUrl: "https://aohquqhjdehmaaretydh.supabase.co",
+  supabaseAnonKey: "sb_publishable_BH1xUr9B4fvEzkTxx28nAg_NUoFeqog",
   // (ไม่บังคับ) จำกัดให้ล็อกอินได้เฉพาะอีเมลโดเมนนี้ เช่น "latto.co.th" เว้นว่าง = Gmail ใดก็ได้
   allowedEmailDomain: "",
 };

@@ -12,7 +12,9 @@ param(
   [int]$QuietSeconds = 15
 )
 
-$ErrorActionPreference = "Stop"
+# ใช้ Continue: ถ้าเป็น Stop, PowerShell จะหยุดทันทีเมื่อ git พิมพ์ข้อความเตือน (เช่น "No such remote")
+# ความผิดพลาดจริงยังถูกจับโดย Invoke-Git ที่เช็ค exit code
+$ErrorActionPreference = "Continue"
 $ProjectDir = Split-Path -Parent $PSScriptRoot
 Set-Location $ProjectDir
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -25,13 +27,12 @@ if (-not (Get-Command git.exe -ErrorAction SilentlyContinue)) {
 }
 
 # เตรียม repo ครั้งแรก
-$isNewRepo = $false
 if (-not (Test-Path (Join-Path $ProjectDir ".git"))) {
   Log "สร้าง git repo ในโฟลเดอร์นี้"
   Invoke-Git init -b main
-  $isNewRepo = $true
 }
 $remote = (& git.exe remote get-url origin 2>$null)
+if ($LASTEXITCODE -ne 0) { $remote = $null }
 if (-not $remote) {
   if (-not $RepoUrl) { $RepoUrl = Read-Host "วาง URL ของ GitHub repo (เช่น https://github.com/user/repo.git)" }
   if (-not $RepoUrl) { throw "ยังไม่ได้ใส่ URL ของ repo" }
@@ -41,7 +42,9 @@ if (-not $remote) {
 
 # ถ้าบน GitHub มีไฟล์อยู่แล้ว (เช่น เคยอัปโหลดผ่านหน้าเว็บ) ให้ต่อประวัติจากของเดิม
 # โดยยึดไฟล์ในเครื่องนี้เป็นฉบับล่าสุด (ไฟล์ในโฟลเดอร์ไม่ถูกแก้หรือลบ)
-if ($isNewRepo) {
+# ทำเมื่อในเครื่องยังไม่มี commit เลย (ครั้งแรก)
+& git.exe rev-parse --verify HEAD *> $null
+if ($LASTEXITCODE -ne 0) {
   & git.exe ls-remote --exit-code --heads origin main *> $null
   if ($LASTEXITCODE -eq 0) {
     Invoke-Git fetch origin main
