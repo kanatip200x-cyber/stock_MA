@@ -7,11 +7,14 @@
 
 | ไฟล์ | หน้าที่ |
 |---|---|
-| `index.html` | หน้าเว็บหลัก |
+| `index.html` | หน้าเว็บหลัก (ต้องล็อกอินก่อน เมื่อตั้งค่า Supabase แล้ว) |
+| `login.html`, `login.css` | หน้าเข้าสู่ระบบด้วย Google |
+| `auth.js` | เชื่อมต่อ Supabase, ตรวจการล็อกอิน, ออกจากระบบ |
+| `supabase/schema.sql` | สร้างตารางฐานข้อมูล + RLS (รันใน Supabase SQL Editor) |
 | `styles.css`, `common-style.css` | สไตล์ธีมแดง-ขาว (เปลี่ยนสีได้ที่ตัวแปร `--theme-red` ใน `common-style.css`) |
 | `app.js` | ตรรกะหน้าเว็บ (รับสินค้าเข้า, ย้ายสินค้าออก, ตาราง, ค้นหา) |
 | `sheet-logger.js` | ส่งรายการเข้า/ออกไปที่ Google Sheet (มีคิวเก็บไว้ส่งใหม่ถ้าเน็ตหลุด) |
-| `config.js` | ใส่ URL ของ Google Apps Script และ token |
+| `config.js` | ใส่ค่า Supabase (URL + anon key) และ URL ของ Google Apps Script |
 | `google-apps-script/Code.gs` | โค้ดฝั่ง Google Sheet ที่รับข้อมูลแล้วเขียนลงชีต |
 | `tools/start-auto-push.bat`, `tools/push-now.bat`, `tools/auto-push.ps1` | อัปโหลดขึ้น GitHub อัตโนมัติ / ครั้งเดียว |
 
@@ -52,6 +55,66 @@
 > ถ้าแก้โค้ดใน Code.gs ภายหลัง ต้อง Deploy ใหม่ โดยเลือก **จัดการการทำให้ใช้งานได้ (Manage deployments) > แก้ไข > เวอร์ชันใหม่** เพื่อให้ URL เดิมใช้ต่อได้
 
 ถ้ายังไม่ใส่ URL ใน `config.js` เว็บจะทำงานได้ตามปกติ แค่จะไม่ส่งข้อมูลไปที่ชีต
+
+
+## ล็อกอินด้วย Google + ฐานข้อมูล Supabase
+
+เมื่อใส่ค่า Supabase ใน `config.js` แล้ว เว็บจะ
+- บังคับให้ล็อกอินด้วยบัญชี Google (Gmail) ที่หน้า `login.html` ก่อนเข้าหน้าหลัก
+- เก็บสินค้า, ประวัติรับเข้า/ขนย้าย (พร้อมชื่อคนทำรายการ) และผู้ใช้ ไว้ในฐานข้อมูล Supabase
+- อัปเดตตารางสดทุกเครื่องที่เปิดอยู่ (Realtime)
+- ถ้ายังไม่ใส่ค่า เว็บทำงานแบบออฟไลน์เหมือนเดิม (เก็บในเบราว์เซอร์ ไม่ต้องล็อกอิน)
+
+ตารางในฐานข้อมูล: `profiles` (ผู้ใช้ + role staff/admin), `locations` (คลัง/พื้นที่ปลายทาง), `products` (สินค้า), `stock_movements` (ประวัติ แก้ไข/ลบไม่ได้)
+ทุกตารางเปิด Row Level Security: คนที่ไม่ได้ล็อกอินอ่านหรือเขียนอะไรไม่ได้เลย
+
+### ขั้นที่ 1: สร้างโปรเจกต์ Supabase
+1. เข้า https://supabase.com/dashboard แล้วกด **New project**
+2. ตั้งชื่อ `inventory-demo`, Region เลือก **Southeast Asia (Singapore)**, ตั้งรหัสผ่านฐานข้อมูล (เก็บไว้เอง ไม่ต้องใส่ในเว็บ) แล้วกด **Create** (แพลน Free ไม่มีค่าใช้จ่าย)
+3. รอ 1-2 นาทีจนโปรเจกต์พร้อม
+
+### ขั้นที่ 2: สร้างตาราง
+1. ในโปรเจกต์ ไปที่ **SQL Editor > New query**
+2. คัดลอกทั้งไฟล์ `supabase/schema.sql` มาวาง แล้วกด **Run** (รันซ้ำได้ ไม่ลบข้อมูลเดิม)
+
+### ขั้นที่ 3: สร้าง Google OAuth Client (ทำใน Google Cloud)
+1. ใน Supabase ไปที่ **Authentication > Sign In / Providers > Google** แล้วคัดลอกค่า **Callback URL** (หน้าตา `https://xxxx.supabase.co/auth/v1/callback`)
+2. เข้า https://console.cloud.google.com สร้างโปรเจกต์ใหม่ (หรือใช้อันเดิม)
+3. ไปที่ **APIs & Services > OAuth consent screen** (หรือ **Google Auth Platform > Branding**)
+   - User type: **External** ใส่ชื่อแอป เช่น "คลังสินค้า Demo" และอีเมลติดต่อ แล้วบันทึก
+   - ถ้าแอปยังอยู่สถานะ **Testing** ต้องเพิ่มอีเมล Gmail ของคนที่จะใช้ใน **Test users** หรือกด **Publish app** เพื่อให้ Gmail ไหนก็เข้าได้
+4. ไปที่ **APIs & Services > Credentials > Create credentials > OAuth client ID**
+   - Application type: **Web application**
+   - **Authorized JavaScript origins**: ใส่ที่อยู่เว็บ เช่น `http://localhost:5500` และ/หรือ `https://kanatip200x-cyber.github.io`
+   - **Authorized redirect URIs**: วาง **Callback URL** จาก Supabase (ข้อ 1)
+   - กด Create แล้วคัดลอก **Client ID** และ **Client secret**
+5. กลับไปที่ Supabase **Authentication > Sign In / Providers > Google** เปิด **Enable** แล้ววาง Client ID และ Client secret กด **Save**
+   (Client secret ใส่ที่ Supabase เท่านั้น ห้ามใส่ในไฟล์เว็บ)
+
+### ขั้นที่ 4: บอก Supabase ว่าเว็บอยู่ที่ไหน
+ไปที่ **Authentication > URL Configuration**
+- **Site URL**: ที่อยู่หลักของเว็บ เช่น `https://kanatip200x-cyber.github.io/stock_MA/`
+- **Redirect URLs**: เพิ่มทุกที่อยู่ที่จะเปิดเว็บ เช่น `https://kanatip200x-cyber.github.io/stock_MA/**` และ `http://localhost:5500/**`
+
+### ขั้นที่ 5: ใส่ค่าใน config.js
+ไปที่ **Project Settings > API Keys** (หรือ Data API) แล้วคัดลอก
+- **Project URL** ใส่ใน `supabaseUrl`
+- **anon public** หรือ **publishable** key ใส่ใน `supabaseAnonKey`
+คีย์นี้เป็นคีย์สาธารณะ อยู่ในหน้าเว็บได้เพราะมี RLS คุ้มครอง **ห้ามใช้ service_role / secret key เด็ดขาด**
+ถ้าต้องการให้เฉพาะอีเมลบริษัทเข้าได้ ใส่ `allowedEmailDomain: "latto.co.th"` (ตัวอย่าง)
+
+### ขั้นที่ 6: ทดสอบ
+- การล็อกอิน Google **ใช้กับการเปิดไฟล์ตรง ๆ (file://) ไม่ได้** ต้องเปิดผ่านเว็บเซิร์ฟเวอร์ เช่น
+  - VS Code ติดตั้ง Live Server แล้วคลิกขวา `index.html` > Open with Live Server (ได้ `http://127.0.0.1:5500`) หรือ
+  - ใช้ GitHub Pages
+- เปิด `login.html` กด **เข้าสู่ระบบด้วย Google** เลือกบัญชี แล้วจะกลับมาหน้าหลักพร้อมชื่อและรูปของคุณมุมขวาบน
+
+### ตั้งตัวเองเป็นแอดมิน (ไม่บังคับ)
+หลังล็อกอินครั้งแรก ไปที่ SQL Editor แล้วรัน
+```sql
+update public.profiles set role = 'admin' where email = 'อีเมลของคุณ@gmail.com';
+```
+แอดมินลบสินค้าและแก้รายการคลัง/พื้นที่ (`locations`) ได้ พนักงานทั่วไป (staff) รับเข้าและขนย้ายได้
 
 ## เปิดใช้งานเว็บ
 

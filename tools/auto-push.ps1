@@ -7,7 +7,7 @@
   ครั้งแรกที่ push จะมีหน้าต่างให้ล็อกอิน GitHub (Git Credential Manager)
 #>
 param(
-  [string]$RepoUrl = "",      # เช่น https://github.com/<user>/<repo>.git (ใส่ครั้งแรกครั้งเดียว)
+  [string]$RepoUrl = "https://github.com/kanatip200x-cyber/stock_MA.git",  # repo ปลายทาง (ใช้ตอนตั้งค่าครั้งแรก)
   [switch]$Once,
   [int]$QuietSeconds = 15
 )
@@ -25,9 +25,11 @@ if (-not (Get-Command git.exe -ErrorAction SilentlyContinue)) {
 }
 
 # เตรียม repo ครั้งแรก
+$isNewRepo = $false
 if (-not (Test-Path (Join-Path $ProjectDir ".git"))) {
   Log "สร้าง git repo ในโฟลเดอร์นี้"
   Invoke-Git init -b main
+  $isNewRepo = $true
 }
 $remote = (& git.exe remote get-url origin 2>$null)
 if (-not $remote) {
@@ -35,6 +37,17 @@ if (-not $remote) {
   if (-not $RepoUrl) { throw "ยังไม่ได้ใส่ URL ของ repo" }
   Invoke-Git remote add origin $RepoUrl
   Log "ผูกกับ $RepoUrl แล้ว"
+}
+
+# ถ้าบน GitHub มีไฟล์อยู่แล้ว (เช่น เคยอัปโหลดผ่านหน้าเว็บ) ให้ต่อประวัติจากของเดิม
+# โดยยึดไฟล์ในเครื่องนี้เป็นฉบับล่าสุด (ไฟล์ในโฟลเดอร์ไม่ถูกแก้หรือลบ)
+if ($isNewRepo) {
+  & git.exe ls-remote --exit-code --heads origin main *> $null
+  if ($LASTEXITCODE -eq 0) {
+    Invoke-Git fetch origin main
+    Invoke-Git reset origin/main
+    Log "เชื่อมกับประวัติเดิมบน GitHub แล้ว"
+  }
 }
 
 # ตั้งชื่อผู้ commit ถ้ายังไม่เคยตั้ง (ใช้อีเมล noreply ของ GitHub ไม่เปิดเผยอีเมลจริง)

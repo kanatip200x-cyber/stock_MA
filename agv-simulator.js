@@ -7,6 +7,7 @@
  * อ่านตัวแปรจาก app.js: detailProduct, products, arrivals และเรียก render(), renderDetailModal(), showToast(), formatTime()
  */
 (() => {
+  const e = v => (typeof esc === "function" ? esc(v) : String(v));
   const STEP_MS = 5000;
   const STEPS = [
     { title: "นำภาชนะมารอที่จุดรับสินค้า", text: job => `AGV นำภาชนะเปล่ามารอที่จุดรับสินค้า ${job.from}` },
@@ -42,11 +43,11 @@
     panel.hidden = false;
     const now = Date.now();
     panel.innerHTML = `
-      <div class="move-steps-head"><b>ขนย้าย ${job.from} → ${job.to}</b><span>${job.done ? "เสร็จสิ้น" : `ขั้นตอนที่ ${job.step + 1}/3 · เหลือ ${Math.max(0, Math.ceil((job.stepStart + STEP_MS - now) / 1000))} วิ`}</span></div>
+      <div class="move-steps-head"><b>ขนย้าย ${e(job.from)} → ${e(job.to)}</b><span>${job.done ? "เสร็จสิ้น" : `ขั้นตอนที่ ${job.step + 1}/3 · เหลือ ${Math.max(0, Math.ceil((job.stepStart + STEP_MS - now) / 1000))} วิ`}</span></div>
       <ol>${STEPS.map((s, i) => {
         const state = job.done || i < job.step ? "done" : i === job.step ? "active" : "pending";
         const pct = state === "done" ? 100 : state === "active" ? Math.min(100, ((now - job.stepStart) / STEP_MS) * 100) : 0;
-        return `<li class="ms-${state}"><span class="ms-num">${state === "done" ? "✓" : i + 1}</span><div><strong>${s.title}</strong><p>${s.text(job)}</p><div class="ms-bar"><i style="width:${pct}%"></i></div></div></li>`;
+        return `<li class="ms-${state}"><span class="ms-num">${state === "done" ? "✓" : i + 1}</span><div><strong>${s.title}</strong><p>${e(s.text(job))}</p><div class="ms-bar"><i style="width:${pct}%"></i></div></div></li>`;
       }).join("")}</ol>`;
   }
 
@@ -64,19 +65,23 @@
   }
 
   function tick() {
+    if (!job || job.done) return;
     if (Date.now() - job.stepStart >= STEP_MS) {
       if (job.step < STEPS.length - 1) { job.step += 1; job.stepStart = Date.now(); }
-      else return finish();
+      else { clearInterval(tickTimer); tickTimer = null; return finish(); }
     }
     paint();
   }
 
-  function finish() {
+  async function finish() {
     clearInterval(tickTimer); tickTimer = null;
-    job.done = true;
     const { product, from, to } = job;
+    // บันทึกลงฐานข้อมูล Supabase (ถ้าเชื่อมต่อไว้) ก่อนแสดงว่าสำเร็จ
+    const saved = typeof persistMove === "function" ? await persistMove(product, from, to) : true;
+    job.done = true;
+    if (!saved) { showToast("ขนย้ายไม่สำเร็จ", "บันทึกลงฐานข้อมูลไม่ได้ กรุณาลองใหม่"); job = null; render(); paint(); return; }
     product.location = to;
-    arrivals.unshift({ ...product, amount: product.qty, time: formatTime(), action: `ขนย้าย ${from} → ${to}` });
+    if (typeof ONLINE === "undefined" || !ONLINE) arrivals.unshift({ ...product, amount: product.qty, time: formatTime(), action: `ขนย้าย ${from} → ${to}` });
     render();
     if (current() === product) renderDetailModal();
     showToast("ขนย้ายสำเร็จ", `${product.name} จาก ${from} ไป ${to}`);
