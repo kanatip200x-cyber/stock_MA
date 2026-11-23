@@ -10,6 +10,22 @@
   const pageUrl = file => new URL(file, window.location.href).href.split("#")[0].split("?")[0];
   const domainOk = user => !cfg.allowedEmailDomain || (user?.email || "").toLowerCase().endsWith("@" + cfg.allowedEmailDomain.toLowerCase());
 
+  // ===== โหมดผู้เยี่ยมชม (PIN) =====
+  const GUEST_KEY = "inventoryGuestMode";
+  const isGuest = () => sessionStorage.getItem(GUEST_KEY) === "1";
+  async function sha256(text) {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+  }
+  async function enterGuest(pin) {
+    if (!cfg.guestPinHash) throw new Error("ยังไม่ได้เปิดโหมดผู้เยี่ยมชม");
+    if (!window.crypto?.subtle) throw new Error("ต้องเปิดเว็บผ่าน https จึงจะใช้ PIN ได้");
+    const ok = (await sha256("inventory-demo:" + String(pin).trim())) === cfg.guestPinHash;
+    if (ok) sessionStorage.setItem(GUEST_KEY, "1");
+    return ok;
+  }
+  function leaveGuest() { sessionStorage.removeItem(GUEST_KEY); }
+
   async function getUser() {
     if (!client) return null;
     const { data } = await client.auth.getSession();
@@ -26,6 +42,7 @@
   }
 
   async function signOut() {
+    leaveGuest();
     if (client) await client.auth.signOut();
     window.location.replace(pageUrl("login.html"));
   }
@@ -50,5 +67,5 @@
     return { user, profile };
   }
 
-  window.Auth = { enabled, client, getUser, signInWithGoogle, signOut, requireLogin, domainOk, pageUrl };
+  window.Auth = { enabled, client, getUser, signInWithGoogle, signOut, requireLogin, domainOk, pageUrl, isGuest, enterGuest, leaveGuest, guestEnabled: !!cfg.guestPinHash };
 })();
